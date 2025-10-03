@@ -15,7 +15,7 @@ app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/bookswap', {
+mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://mahekagarwal1216_db_user:hello@cluster0.6wukrvv.mongodb.net/', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
