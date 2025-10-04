@@ -55,7 +55,6 @@ const storage = multer.diskStorage({
     cb(null, Date.now() + '-' + file.originalname);
   }
 });
-
 const upload = multer({ storage });
 
 // Authentication middleware
@@ -77,26 +76,19 @@ const authenticateToken = (req, res, next) => {
 };
 
 // Routes
-
-// Auth routes
 app.post('/api/register', async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
-    // Check if user exists
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create user
     const user = new User({ username, email, password: hashedPassword });
     await user.save();
 
-    // Generate token
     const token = jwt.sign(
       { userId: user._id, username: user.username },
       process.env.JWT_SECRET || 'your-secret-key',
@@ -116,20 +108,16 @@ app.post('/api/register', async (req, res) => {
 app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    // Find user
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Check password
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Generate token
     const token = jwt.sign(
       { userId: user._id, username: user.username },
       process.env.JWT_SECRET || 'your-secret-key',
@@ -213,16 +201,14 @@ app.put('/api/books/:id', authenticateToken, async (req, res) => {
 app.post('/api/requests', authenticateToken, async (req, res) => {
   try {
     const { bookId, message } = req.body;
-
     const book = await Book.findById(bookId);
+
     if (!book) {
       return res.status(404).json({ message: 'Book not found' });
     }
-
     if (book.owner.toString() === req.user.userId) {
       return res.status(400).json({ message: 'Cannot request your own book' });
     }
-
     if (!book.available) {
       return res.status(400).json({ message: 'Book is not available' });
     }
@@ -232,7 +218,6 @@ app.post('/api/requests', authenticateToken, async (req, res) => {
       requester: req.user.userId,
       status: 'pending'
     });
-
     if (existingRequest) {
       return res.status(400).json({ message: 'Request already sent' });
     }
@@ -290,13 +275,11 @@ app.put('/api/requests/:id', authenticateToken, async (req, res) => {
     if (!request) {
       return res.status(404).json({ message: 'Request not found' });
     }
-
     if (request.book.owner.toString() !== req.user.userId) {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
     request.status = status;
-    
     if (status === 'accepted') {
       request.book.available = false;
       await request.book.save();
@@ -307,6 +290,11 @@ app.put('/api/requests/:id', authenticateToken, async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
+});
+
+// ✅ Root route so Render doesn't show "Cannot GET /"
+app.get("/", (req, res) => {
+  res.send("Backend is running 🚀");
 });
 
 const PORT = process.env.PORT || 5000;
